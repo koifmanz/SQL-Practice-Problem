@@ -12,7 +12,7 @@ SELECT country, city, COUNT(*) AS total_customers FROM customers GROUP BY city, 
 SELECT product_id, product_name, units_in_stock, reorder_level FROM products WHERE units_in_stock <= reorder_level ORDER BY product_id;
 
 --q23
-SELECT product_id, product_name, units_in_stock, units_on_order, reorder_level, discontinued 
+EXPLAIN (ANALYZE, BUFFERS) SELECT product_id, product_name, units_in_stock, units_on_order, reorder_level, discontinued 
 FROM products 
 WHERE units_in_stock + units_on_order <= reorder_level AND discontinued = 0
 ORDER BY product_id;
@@ -52,3 +52,14 @@ JOIN order_details AS od ON o.order_id=od.order_id
 JOIN products AS p on od.product_id=p.product_id
 ORDER BY o.order_id, p.product_id;
 
+--q30
+SELECT c.customer_id, o.customer_id
+FROM customers AS c
+LEFT JOIN orders AS o ON c.customer_id = o.customer_id
+WHERE o.customer_id ISNULL;
+
+--q31
+SELECT DISTINCT c.customer_id
+FROM customers c 
+LEFT JOIN orders o on c.customer_id = o.customer_id
+WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.customer_id AND o.employee_id=4)
