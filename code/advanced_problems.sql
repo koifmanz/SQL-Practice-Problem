@@ -94,3 +94,41 @@ ORDER BY total_late_orders DESC ,late_orders_employee.employee_id
 
 SELECT * from orders limit 2;
 SELECT * from employees limit 2;
+
+--q43
+--get all late orders for each employeew (ith have late orders)
+WITH late_orders_employee AS (
+       select employee_id, count(employee_id) AS total_late_orders
+       from orders
+       WHERE shipped_date::date >= required_date::date
+       GROUP BY employee_id),
+--get all orders for each employee
+all_orders_employee AS (
+       select employee_id, count(employee_id) AS all_orders
+       from orders
+       GROUP BY employee_id)
+--join them
+SELECT late.employee_id ,last_name, total.all_orders, late.total_late_orders
+FROM employees AS em
+JOIN late_orders_employee as late ON em.employee_id = late.employee_id
+JOIN all_orders_employee as total ON total.employee_id = late.employee_id
+ORDER BY late.employee_id
+
+--q44
+WITH late_orders_employee AS (
+       select employee_id, count(employee_id) AS total_late_orders
+       from orders
+       WHERE shipped_date::date >= required_date::date
+       GROUP BY employee_id),
+--get all orders for each employee
+all_orders_employee AS (
+       select employee_id, count(employee_id) AS all_orders
+       from orders
+       GROUP BY employee_id)
+--join them
+SELECT em.employee_id ,last_name, total.all_orders, late.total_late_orders
+FROM employees AS em
+JOIN all_orders_employee as total ON total.employee_id = em.employee_id
+LEFT JOIN late_orders_employee as late ON em.employee_id = late.employee_id
+ORDER BY em.employee_id
+
