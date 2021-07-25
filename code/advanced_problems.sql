@@ -145,3 +145,30 @@ JOIN all_orders_employee as total ON total.employee_id = em.employee_id
 LEFT JOIN late_orders_employee as late ON em.employee_id = late.employee_id
 ORDER BY em.employee_id
 
+--q48
+--calculate total amount first
+WITH total_orders as (
+       select customer_id,
+       round(sum(unit_price*quantity)::numeric, 2) AS total_order_amount
+FROM order_details 
+JOIN orders ON orders.order_id=order_details.order_id
+WHERE order_date BETWEEN '20160101' AND '20161231'
+GROUP BY customer_id)
+--join the company names and use case to group
+SELECT customers.customer_id, company_name, total_order_amount,
+       CASE
+           WHEN total_order_amount BETWEEN 0 AND 1000 THEN 'Low'
+           WHEN total_order_amount BETWEEN 1000 AND 5000 THEN 'Medium'
+           WHEN total_order_amount BETWEEN 5000 AND 10000 THEN 'High'
+           WHEN total_order_amount > 10000 THEN 'VERY High'
+           ELSE '0'
+       END customer_group
+FROM customers
+JOIN total_orders ON total_orders.customer_id = customers.customer_id 
+ORDER BY customers.customer_id;
+
+--q49
+--in q49 you need to fix customer_id MAISD which have a null becuase the using of between for money, which is good for integer, but not money.
+--I guess in postgres that is not the case, it still know that 5000.20 is bigger then 5000 (and therefore in the high category).
+--The author recomeneded to use:
+--total_order_amount >= 0 and total_order_amount < 1000
