@@ -75,7 +75,22 @@ ON potenial_problem_orders.order_id = order_details.order_id
 ORDER BY order_id, product_id;
 
 --q41
-select order_id, order_date, required_date, shipped_date 
+select order_id, order_date, required_date, shipped_date
 from orders
 WHERE shipped_date::date >= required_date::date
 ORDER BY order_id;
+
+--q42
+WITH late_orders_employee AS (
+select employee_id, count(employee_id) AS total_late_orders
+from orders
+WHERE shipped_date::date >= required_date::date
+GROUP BY employee_id)
+
+SELECT late_orders_employee.employee_id ,last_name, late_orders_employee.total_late_orders
+FROM employees
+JOIN late_orders_employee ON employees.employee_id = late_orders_employee.employee_id
+ORDER BY total_late_orders DESC ,late_orders_employee.employee_id
+
+SELECT * from orders limit 2;
+SELECT * from employees limit 2;
