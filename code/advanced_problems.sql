@@ -114,7 +114,10 @@ JOIN late_orders_employee as late ON em.employee_id = late.employee_id
 JOIN all_orders_employee as total ON total.employee_id = late.employee_id
 ORDER BY late.employee_id
 
---q44
+--q44 + q45 + q46 + q47
+-- q45 ask the user to change the null of employee id 5 to 0. I add the case to this problem.
+-- q46 ask the user to calculate precentes, I used case because because of the null. probably is better to use another cte
+-- q47 ask to round up to 2 digits after the point. 
 WITH late_orders_employee AS (
        select employee_id, count(employee_id) AS total_late_orders
        from orders
@@ -126,7 +129,17 @@ all_orders_employee AS (
        from orders
        GROUP BY employee_id)
 --join them
-SELECT em.employee_id ,last_name, total.all_orders, late.total_late_orders
+SELECT em.employee_id ,last_name, total.all_orders, late.total_late_orders,
+       --case is the sulotion for q45 
+       CASE
+           WHEN late.total_late_orders IS NULL THEN 0
+           ELSE late.total_late_orders
+       END case_total_late_orders,
+--the precent calculation is for q46, the round for q47
+       CASE
+          WHEN late.total_late_orders IS NULL THEN 0.00
+          ELSE ROUND((late.total_late_orders/total.all_orders::numeric),2)  
+       END precent_late_order
 FROM employees AS em
 JOIN all_orders_employee as total ON total.employee_id = em.employee_id
 LEFT JOIN late_orders_employee as late ON em.employee_id = late.employee_id
