@@ -172,3 +172,100 @@ ORDER BY customers.customer_id;
 --I guess in postgres that is not the case, it still know that 5000.20 is bigger then 5000 (and therefore in the high category).
 --The author recomeneded to use:
 --total_order_amount >= 0 and total_order_amount < 1000
+
+--q50
+--calculate total amount first
+WITH total_orders as (
+       select customer_id,
+       round(sum(unit_price*quantity)::numeric, 2) AS total_order_amount
+FROM order_details 
+JOIN orders ON orders.order_id=order_details.order_id
+WHERE order_date BETWEEN '20160101' AND '20161231'
+GROUP BY customer_id),
+--join the company names and use case to group
+c_groups AS (
+       SELECT customers.customer_id, company_name, total_order_amount,
+       CASE
+           WHEN total_order_amount BETWEEN 0 AND 1000 THEN 'Low'
+           WHEN total_order_amount BETWEEN 1000 AND 5000 THEN 'Medium'
+           WHEN total_order_amount BETWEEN 5000 AND 10000 THEN 'High'
+           WHEN total_order_amount > 10000 THEN 'VERY High'
+           ELSE '0'
+       END customer_group
+       FROM customers
+       JOIN total_orders ON total_orders.customer_id = customers.customer_id)
+
+SELECT customer_group, count(customer_group) AS total_in_group,
+       count(customer_group)::numeric / (select count(customer_group) from c_groups) AS prcentage_in_group
+FROM c_groups
+GROUP BY customer_group
+ORDER BY total_in_group DESC;
+
+--q51
+with total_orders AS (
+       select customers.customer_id, customers.company_name, ROUND(sum((unit_price*quantity))::numeric, 2) AS total_order_amount 
+       FROM order_details
+       JOIN orders on order_details.order_id = orders.order_id
+       JOIN customers on orders.customer_id = customers.customer_id
+       WHERE order_date BETWEEN '20160101' AND '20161231'
+       GROUP BY customers.customer_id, customers.company_name)
+
+SELECT total_orders.customer_id, total_orders.company_name, total_orders.total_order_amount, ctg.customer_group_name 
+FROM total_orders
+JOIN customer_group_thresholds AS ctg ON total_orders.total_order_amount BETWEEN range_bottom AND range_top
+ORDER BY total_orders.customer_id;
+
+--q52
+SELECT DISTINCT country FROM customers
+UNION
+SELECT DISTINCT country FROM suppliers
+ORDER BY country;
+
+--q53
+-- in the answers she used two cte's insted of one, while it easier to read I don't find it make big diffrence in this case
+WITH suppliers_countries AS (
+       SELECT DISTINCT country FROM suppliers
+)
+SELECT DISTINCT suppliers_countries.country AS suppliers_country  ,customers.country AS customers_country 
+FROM customers
+FULL OUTER JOIN suppliers_countrys ON customers.country = suppliers_countries.country
+ORDER BY customers_country, suppliers_country 
+
+--q54
+--before review the answer I used the commented part and all_countries table
+-- in the answers she used isnull from sql_server. In postgres there isnt a function like that, you need to use coalesce
+WITH total_customers_countries AS (
+       SELECT country, count(country) AS total_customers 
+       FROM customers 
+       GROUP BY country
+),
+total_suppliers_countries AS (
+       SELECT country, count(country) AS total_suppliers 
+       FROM suppliers 
+       GROUP BY country
+),
+all_countiers AS (
+       SELECT DISTINCT country FROM customers
+       UNION
+       SELECT DISTINCT country FROM suppliers
+)
+SELECT coalesce(tcc.country, tsc.country) AS country, coalesce(tsc.total_suppliers, 0), coalesce(tcc.total_customers, 0)
+from total_customers_countries AS tcc
+FULL OUTER JOIN total_suppliers_countries AS tsc ON tcc.country = tsc.country
+--FROM all_countiers as allc
+--LEFT JOIN total_customers_countries tcc ON allc.country = tcc.country
+--LEFT JOIN total_suppliers_countries tsc ON allc.country = tsc.country
+ORDER BY country;
+
+--q55
+WITH rank_orders AS (
+       SELECT ship_country, customer_id, order_id, order_date,
+              ROW_NUMBER() OVER (PARTITION BY ship_country ORDER BY order_date) AS row_id
+       FROM orders
+       ORDER BY ship_country)
+SELECT ship_country, customer_id, order_id, order_date
+FROM rank_orders
+WHERE row_id=1
+
+--q56
+
