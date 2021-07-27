@@ -268,4 +268,30 @@ FROM rank_orders
 WHERE row_id=1
 
 --q56
+--my code have a prblem because there need to be 71 rows. The book's answer is not clear where the issue
+-- I found few missing rows, the fix was to move the comparasion of the order ids to the where part and change it from <> to <
+SELECT 
+       init_orders.customer_id,
+       next_orders.order_id AS initial_order_id, next_orders.order_date AS initial_order_date, 
+       init_orders.order_id AS next_order_id, init_orders.order_date AS next_order_date, 
+       (init_orders.order_date::date - next_orders.order_date::date) AS day_between_orders
+FROM orders AS init_orders 
+JOIN orders AS next_orders
+       ON next_orders.customer_id = init_orders.customer_id 
+       --AND init_orders.order_date > next_orders.order_date
+       AND (init_orders.order_date - next_orders.order_date) BETWEEN 0 AND 5
+--WHERE  init_orders.customer_id = 'BOTTM' AND next_orders.order_id = 10410 AND 
+WHERE next_orders.order_id < init_orders.order_id
+ORDER BY init_orders.customer_id, initial_order_date, next_order_id
 
+--q57
+-- same thing as above but with window function
+WITH next_order_dates AS (
+       SELECT customer_id, order_date,
+              LEAD(order_date, 1) OVER (PARTITION BY customer_id ORDER BY order_date) AS next_order
+       FROM orders)
+SELECT customer_id, order_date, next_order, 
+       (next_order::date - order_date::date) AS day_between_orders
+FROM next_order_dates
+WHERE (next_order::date - order_date::date) BETWEEN 0 AND 5
+ORDER BY customer_id
